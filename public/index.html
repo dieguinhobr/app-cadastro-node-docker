@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Usuários</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .btn-add {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+      width: auto;
+      padding: 6px 12px;
+      margin-left: 10px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 10px;
+    }
+
+    li {
+      background: #f1f1f1;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mensagem {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Cadastro de Usuários</h1>
+
+  <form id="form">
+    <input type="text" id="nome" placeholder="Nome" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <button type="submit" class="btn-add">Cadastrar</button>
+  </form>
+
+  <h2>Lista de Usuários</h2>
+  <ul id="lista"></ul>
+
+  <div class="mensagem" id="mensagem"></div>
+</div>
+
+<script>
+const form = document.getElementById("form");
+const lista = document.getElementById("lista");
+const mensagem = document.getElementById("mensagem");
+
+// =============================
+// CARREGAR USUÁRIOS
+// =============================
+async function carregarUsuarios() {
+  try {
+    const resposta = await fetch("/usuarios");
+
+    if (!resposta.ok) {
+      throw new Error("Erro ao buscar usuários");
+    }
+
+    const usuarios = await resposta.json();
+
+    lista.innerHTML = "";
+
+    if (usuarios.length === 0) {
+      mensagem.innerText = "Nenhum usuário cadastrado.";
+      return;
+    }
+
+    mensagem.innerText = "";
+
+    usuarios.forEach(usuario => {
+      const li = document.createElement("li");
+
+      li.innerHTML = `
+        <span>${usuario.nome} - ${usuario.email}</span>
+        <button class="btn-delete" onclick="deletarUsuario('${usuario._id}')">
+          Deletar
+        </button>
+      `;
+
+      lista.appendChild(li);
+    });
+
+  } catch (erro) {
+    console.error("Erro ao carregar usuários:", erro);
+    mensagem.innerText = "Erro ao conectar com o servidor.";
+  }
+}
+
+// =============================
+// DELETAR USUÁRIO
+// =============================
+async function deletarUsuario(id) {
+  try {
+    await fetch(`/usuarios/${id}`, {
+      method: "DELETE"
+    });
+
+    carregarUsuarios();
+
+  } catch (erro) {
+    console.error("Erro ao deletar:", erro);
+    mensagem.innerText = "Erro ao deletar usuário.";
+  }
+}
+
+// =============================
+// CADASTRAR USUÁRIO
+// =============================
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const nome = document.getElementById("nome").value;
+  const email = document.getElementById("email").value;
+
+  try {
+    await fetch("/usuarios", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ nome, email })
+    });
+
+    form.reset();
+    carregarUsuarios();
+
+  } catch (erro) {
+    console.error("Erro ao cadastrar:", erro);
+    mensagem.innerText = "Erro ao cadastrar usuário.";
+  }
+});
+
+// Carrega ao iniciar
+carregarUsuarios();
+</script>
+
+</body>
+</html>
